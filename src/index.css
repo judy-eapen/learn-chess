@@ -1,0 +1,49 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #fff9f0;
+  --color-primary: #ff6b35;
+  --color-secondary: #4ecdc4;
+  --color-accent: #ffe66d;
+  --color-purple: #a855f7;
+  --color-green: #22c55e;
+  --color-text: #2d2d2d;
+  --color-text-light: #6b7280;
+  --color-card: #ffffff;
+  --color-border: #e5e7eb;
+  --font-family: 'Nunito', 'Comic Sans MS', cursive, sans-serif;
+  --border-radius: 16px;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
+}
+
+html, body {
+  min-height: 100vh;
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-family);
+  border: none;
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--color-secondary);
+  outline-offset: 2px;
+}
