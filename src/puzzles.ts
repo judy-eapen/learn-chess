@@ -86,13 +86,13 @@ const puzzles: Puzzle[] = [
   },
   {
     id: 'tac-3',
-    title: 'Skewer the Queen',
-    fen: '4k3/4q3/8/8/8/8/8/R3K3 w Q - 0 1',
-    solution: ['a1a7'],
+    title: 'Skewer the King',
+    fen: '8/8/8/8/8/2k4q/8/R3K3 w Q - 0 1',
+    solution: ['a1a3'],
     difficulty: 2,
-    hint: 'Your rook can attack along the 7th rank — what valuable piece is hiding behind?',
+    hint: 'Your rook can attack along the 3rd rank — the king is in front of a valuable piece!',
     explanation:
-      'Ra7! — the rook skewers the queen on e7! A skewer is like a reverse pin: the more valuable piece (the queen) must move, exposing a less valuable piece behind it. But here, after Qxa7... wait — the queen is trapped! Qd8 is the only move, and Ra8+ follows.',
+      'Ra3+! — the rook skewers the Black king on c3! A skewer forces the more valuable piece to move, then the less valuable piece behind it is captured. After the king steps aside, White captures the queen on h3, winning decisive material.',
   },
   {
     id: 'tac-4',
@@ -106,13 +106,13 @@ const puzzles: Puzzle[] = [
   },
   {
     id: 'tac-5',
-    title: 'Discovered Attack',
-    fen: '4k3/4r3/8/2B5/8/8/8/4K3 w - - 0 1',
-    solution: ['c5f8'],
+    title: 'Bishop Wins the Rook',
+    fen: '5k2/4r3/8/2B5/8/8/8/5K2 w - - 0 1',
+    solution: ['c5e7'],
     difficulty: 2,
-    hint: 'Move a piece to unleash an attack from a piece behind it!',
+    hint: 'Your bishop can reach the rook along the diagonal — and give check at the same time!',
     explanation:
-      'Bf8+! — the bishop moves to f8 with check, and now the rook on e7 is attacked "for free" because Black is forced to deal with the check first. This is a discovered attack: moving one piece reveals an attack from another piece behind it.',
+      'Bxe7+! — the bishop captures the rook on e7 with check! This is a "capturing with tempo" tactic: White wins the rook AND gives check, forcing Black to respond to the check rather than recapturing. Always look for moves that attack two things at once!',
   },
 
   // ── Difficulty 3: Longer Combinations ────────────────────────────────────
@@ -120,52 +120,52 @@ const puzzles: Puzzle[] = [
   {
     id: 'comb-1',
     title: 'Sacrifice for Mate',
-    fen: 'r1bk3r/ppp2ppp/2np4/4P3/4n1b1/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 9',
-    solution: ['f3e5', 'd3h7'],
+    fen: '6k1/4Qppp/8/8/8/8/8/4R1K1 w - - 0 1',
+    solution: ['e7f7', 'g8h8', 'e1e8'],
     difficulty: 3,
-    hint: 'First take a piece in the center, then look at the h7 pawn!',
+    hint: 'Sacrifice your queen to force the king to the corner, then deliver a back-rank mate!',
     explanation:
-      'Nxe5! and then Bxh7! — White first grabs the knight on e4, then sacrifices the bishop on h7 to expose the king. This two-move combination wins material and creates a dangerous attack. Always look one move further than you think!',
+      'Qxf7+! forces the king to h8, then Re8# — White sacrifices the queen by capturing on f7 with check. The Black king is forced to the corner on h8. Then the rook delivers checkmate on e8, supported by the g7 and h7 pawns trapping the king. Sacrifices that lead to forced checkmate are the most powerful moves in chess!',
   },
   {
     id: 'comb-2',
-    title: 'Windmill Attack',
-    fen: 'r4rk1/ppp2ppp/8/4p3/4P3/3P4/PPP2PPP/2KR1R2 w - - 0 1',
-    solution: ['d1d8', 'f1f8'],
+    title: 'Rook Sacrifice for Checkmate',
+    fen: '2r3k1/5ppp/8/8/Q7/8/8/4R1K1 w - - 0 1',
+    solution: ['e1e8', 'c8e8', 'a4e8'],
     difficulty: 3,
-    hint: 'Double rooks! What if both rooks could attack the back rank?',
+    hint: 'Sacrifice your rook to deflect the defender, then bring the queen in for checkmate!',
     explanation:
-      'Rd8+! Rxd8, then Rxd8+ — White uses both rooks in a "battery" to deliver consecutive checks! First the rook on d1 goes to d8, forcing the enemy rook to recapture, then the other rook captures on d8 with another check. Double rooks on an open file are devastating!',
+      'Re8+! forces Rxe8 (the rook must capture), then Qxe8# — White sacrifices the rook on e8 to lure Black\'s rook onto that square. Once the rook moves to e8, the queen swoops in from a4 along the diagonal to deliver checkmate. Deflection sacrifices are a key tactical weapon!',
   },
   {
     id: 'comb-3',
-    title: 'Queen Sacrifice!',
-    fen: '2r3k1/1p3ppp/p7/3Pp3/8/1P3N2/P4PPP/3R2K1 w - - 0 1',
+    title: 'Rook Sacrifice!',
+    fen: '2r3k1/1p3ppp/p7/4p3/8/1P3N2/P4PPP/3R2K1 w - - 0 1',
     solution: ['d1d8', 'c8d8', 'f3e5'],
     difficulty: 3,
-    hint: 'Sometimes giving away your queen wins the game! Trade pieces and then attack.',
+    hint: 'Sacrifice the rook to deflect the defender, then plant the knight in the center!',
     explanation:
       'Rxd8+! Rxd8 (forced), then Ne5 — White sacrifices the rook to deflect the defender, then the knight hops into a dominant central square, winning the pawn on e5 with a completely winning position. Material sacrifices that improve your position are often worth it!',
   },
   {
     id: 'comb-4',
     title: 'Pawn Promotion Race',
-    fen: '8/P7/8/8/8/8/5p2/4K1k1 w - - 0 1',
-    solution: ['a7a8q', 'f2f1q', 'a8f3'],
+    fen: '8/P7/8/8/8/8/7p/3K1k2 w - - 0 1',
+    solution: ['a7a8q', 'h2h1q', 'a8h1'],
     difficulty: 3,
-    hint: 'Both sides want to promote! Can your queen stop their pawn and win?',
+    hint: 'Both sides want to promote! Can your queen capture theirs before they use it?',
     explanation:
-      'a8=Q! f1=Q (Black promotes too), then Qf3+! — White promotes first, then after Black promotes, White gives check with Qf3+ forcing the Black king to move. After the king moves, White captures the Black queen. Pawn races require precise calculation!',
+      'a8=Q! h1=Q (Black promotes too), then Qxh1+! — White promotes first on a8. After Black promotes on h1, White\'s queen is perfectly placed to capture the new Black queen with check via the long diagonal. Pawn races require precise calculation — promote first and strike immediately!',
   },
   {
     id: 'comb-5',
     title: 'Arabian Mate',
-    fen: '5rk1/5N1p/8/8/8/8/8/R5K1 w - - 0 1',
-    solution: ['f7h6', 'a1a8'],
+    fen: '6k1/6pp/8/5N2/8/8/8/R5K1 w - - 0 1',
+    solution: ['f5h6', 'g8h8', 'a1a8'],
     difficulty: 3,
     hint: 'The knight and rook make a powerful team — can they trap the king in the corner?',
     explanation:
-      'Nh6+ (check, forcing the king to h8), then Ra8# — this is the famous "Arabian Mate"! The knight covers the g8 and f7 escape squares, and the rook delivers checkmate on a8. The knight and rook work together beautifully to trap the king in the corner!',
+      'Nh6+! forces the king to h8, then Ra8# — this is the famous "Arabian Mate"! The knight jumps to h6 giving check and covering the g8 escape square. The Black king is forced to the corner on h8. With g7 and h7 pawns blocking and the knight covering g8, the rook delivers checkmate on a8. The knight and rook work together beautifully to trap the king!',
   },
 ];
 
