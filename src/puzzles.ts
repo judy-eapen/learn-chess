@@ -34,12 +34,12 @@ const puzzles: Puzzle[] = [
   {
     id: 'cm1-3',
     title: 'Rook Sweeps the Back Rank',
-    fen: '6k1/4pppp/8/8/8/8/8/4R1K1 w - - 0 1',
-    solution: ['e1e8'],
+    fen: '6k1/4pppp/8/8/8/8/8/3R2K1 w - - 0 1',
+    solution: ['d1d8'],
     difficulty: 1,
-    hint: 'The rook can travel all the way to the 8th rank in one move!',
+    hint: 'The rook can travel all the way to the 8th rank in one move — find an open file!',
     explanation:
-      'Re8# — the rook slides all the way to e8, and the Black king on g8 is completely trapped. The pawns on e7, f7, g7, and h7 block every escape square on the 7th rank, and the rook controls the entire 8th rank. This is another back-rank mate!',
+      'Rd8# — the rook slides up the d-file all the way to d8, and the Black king on g8 is completely trapped. The pawns on e7, f7, g7, and h7 block every escape square, and the rook controls the entire 8th rank. Checkmate!',
   },
   {
     id: 'cm1-4',
