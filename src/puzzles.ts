@@ -33,13 +33,13 @@ const puzzles: Puzzle[] = [
   },
   {
     id: 'cm1-3',
-    title: 'Knight Fork into Mate',
-    fen: '5rk1/5ppp/8/8/8/8/5PPP/5RK1 w - - 0 1',
-    solution: ['f1f8'],
+    title: 'Rook Sweeps the Back Rank',
+    fen: '6k1/4pppp/8/8/8/8/8/4R1K1 w - - 0 1',
+    solution: ['e1e8'],
     difficulty: 1,
-    hint: 'Rooks love open files — can yours go all the way?',
+    hint: 'The rook can travel all the way to the 8th rank in one move!',
     explanation:
-      'Rxf8# — the rook captures on f8, delivering checkmate. The Black king on g8 cannot take back because White\'s rook is protected, and there are no escape squares.',
+      'Re8# — the rook slides all the way to e8, and the Black king on g8 is completely trapped. The pawns on e7, f7, g7, and h7 block every escape square on the 7th rank, and the rook controls the entire 8th rank. This is another back-rank mate!',
   },
   {
     id: 'cm1-4',
