@@ -1,36 +1,75 @@
 import { useCallback, useMemo, useState } from 'react';
 import './App.css';
 import puzzles from './puzzles';
-import { useProgress } from './hooks/useProgress';
+import { LEVELS, getLevelById, ADAPTIVE_LEVEL } from './levels';
+import { useProgress, isLevelUnlocked } from './hooks/useProgress';
 import PuzzleBoard from './components/PuzzleBoard';
-import ProgressBar from './components/ProgressBar';
+import LevelMap from './components/LevelMap';
 
-const DIFF_LABELS: Record<1 | 2 | 3, string> = {
-  1: '⭐ Beginner',
-  2: '⭐⭐ Explorer',
-  3: '⭐⭐⭐ Champion',
-};
+type Screen = 'map' | 'puzzle';
 
 export default function App() {
-  const { progress, markSolved, resetProgress, setDifficulty } = useProgress();
-  // puzzleKey forces re-mount of PuzzleBoard when the user clicks "Next Puzzle"
+  const { progress, markSolved, markWrong, setActiveLevel, resetProgress } = useProgress();
+  const [screen, setScreen] = useState<Screen>('map');
   const [puzzleKey, setPuzzleKey] = useState(0);
 
-  // Pick the next unsolved puzzle at the current difficulty,
-  // or fall back to any unsolved, or replay if all solved.
+  // ── Level resolution ───────────────────────────────────────────────────────
+  const activeLevel = useMemo(
+    () => getLevelById(progress.activeLevelId) ?? LEVELS[0],
+    [progress.activeLevelId],
+  );
+
+  const isAdaptive = activeLevel.id === ADAPTIVE_LEVEL.id;
+
+  // ── Puzzle pool for the active level ──────────────────────────────────────
+  const levelPuzzles = useMemo(() => {
+    if (isAdaptive) {
+      // All puzzles, sorted by how close they are to the player's ELO
+      return [...puzzles].sort(
+        (a, b) =>
+          Math.abs(a.rating - progress.playerElo) -
+          Math.abs(b.rating - progress.playerElo),
+      );
+    }
+    // Standard level: filter by rating range
+    return puzzles.filter(
+      (p) => p.rating >= activeLevel.minRating && p.rating < activeLevel.maxRating,
+    );
+  }, [isAdaptive, activeLevel, progress.playerElo]);
+
+  // ── Current puzzle selection ───────────────────────────────────────────────
   const currentPuzzle = useMemo(() => {
-    const diffPuzzles = puzzles.filter((p) => p.difficulty === progress.currentDifficulty);
-    const unsolved = diffPuzzles.filter((p) => !progress.solvedIds.includes(p.id));
+    const solvedInLevel = progress.solvedByLevel[activeLevel.id] ?? [];
+
+    if (isAdaptive) {
+      // Pick closest-to-ELO puzzle that hasn't been done recently
+      // (Allow replays — in adaptive we care about rating match, not completion)
+      return levelPuzzles[0] ?? puzzles[0];
+    }
+
+    // Standard: pick first unsolved in the level pool
+    const unsolved = levelPuzzles.filter((p) => !solvedInLevel.includes(p.id));
     if (unsolved.length > 0) return unsolved[0];
-    const allUnsolved = puzzles.filter((p) => !progress.solvedIds.includes(p.id));
-    if (allUnsolved.length > 0) return allUnsolved[0];
-    // Everything solved — replay from beginning of current difficulty
-    return diffPuzzles[0] ?? puzzles[0];
-  }, [progress.currentDifficulty, progress.solvedIds, puzzleKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // All done — cycle from the beginning
+    return levelPuzzles[0] ?? puzzles[0];
+  }, [activeLevel.id, isAdaptive, levelPuzzles, progress.solvedByLevel, puzzleKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleSelectLevel = useCallback(
+    (levelId: string) => {
+      const levelIndex = LEVELS.findIndex((l) => l.id === levelId);
+      if (!isLevelUnlocked(levelIndex, progress.solvedByLevel)) return;
+      setActiveLevel(levelId);
+      setPuzzleKey((k) => k + 1);
+      setScreen('puzzle');
+    },
+    [progress.solvedByLevel, setActiveLevel],
+  );
 
   const handleSolved = useCallback(
-    (puzzleId: string, difficulty: 1 | 2 | 3) => {
-      markSolved(puzzleId, difficulty);
+    (puzzleId: string) => {
+      markSolved(puzzleId);
     },
     [markSolved],
   );
@@ -39,76 +78,70 @@ export default function App() {
     setPuzzleKey((k) => k + 1);
   }, []);
 
+  const handleBackToMap = useCallback(() => {
+    setScreen('map');
+  }, []);
+
+  // ── Solved count in the current level ─────────────────────────────────────
+  const solvedCountInLevel = (progress.solvedByLevel[activeLevel.id] ?? []).length;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="app">
-      {/* ── Header ───────────────────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="header">
         <div className="header-title">
           <span className="emoji">♟️</span>
-          <h1>Chess Puzzles!</h1>
+          <h1>Chess Puzzles</h1>
         </div>
 
-        <div className="difficulty-selector">
-          <span>Level:</span>
-          {([1, 2, 3] as const).map((level) => (
-            <button
-              key={level}
-              className={`diff-btn${progress.currentDifficulty === level ? ' active' : ''}`}
-              onClick={() => setDifficulty(level)}
-              aria-pressed={progress.currentDifficulty === level}
-            >
-              {DIFF_LABELS[level]}
-            </button>
-          ))}
+        {screen === 'puzzle' && (
+          <button className="header-map-btn" onClick={handleBackToMap}>
+            ← Level Map
+          </button>
+        )}
+
+        <div className="header-stats">
+          <span className="header-stat">
+            🔥 {progress.streak}
+          </span>
+          {isAdaptive && (
+            <span className="header-stat" style={{ color: ADAPTIVE_LEVEL.color }}>
+              ELO {progress.playerElo}
+            </span>
+          )}
         </div>
       </header>
 
-      {/* ── Main ─────────────────────────────────────────────────────────── */}
+      {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="main-content">
-        <ProgressBar
-          solved={progress.totalSolved}
-          total={puzzles.length}
-          streak={progress.streak}
-          consecutiveAtLevel={progress.consecutiveAtCurrentLevel}
-          currentDifficulty={progress.currentDifficulty}
-        />
-
-        {currentPuzzle && (
-          <PuzzleBoard
-            key={`${currentPuzzle.id}-${puzzleKey}`}
-            puzzle={currentPuzzle}
-            onSolved={handleSolved}
-            onNextPuzzle={handleNextPuzzle}
+        {screen === 'map' ? (
+          <LevelMap
+            solvedByLevel={progress.solvedByLevel}
+            playerElo={progress.playerElo}
+            onSelectLevel={handleSelectLevel}
+            onResetProgress={resetProgress}
           />
+        ) : (
+          currentPuzzle && (
+            <PuzzleBoard
+              key={`${currentPuzzle.id}-${puzzleKey}`}
+              puzzle={currentPuzzle}
+              level={activeLevel}
+              playerElo={progress.playerElo}
+              isAdaptive={isAdaptive}
+              solvedCount={solvedCountInLevel}
+              onSolved={handleSolved}
+              onWrong={markWrong}
+              onNextPuzzle={handleNextPuzzle}
+              onBackToMap={handleBackToMap}
+            />
+          )
         )}
-
-        <button
-          onClick={resetProgress}
-          style={{
-            marginTop: '0.5rem',
-            background: 'transparent',
-            color: 'var(--color-text-light)',
-            fontSize: '0.8rem',
-            padding: '0.3rem 0.7rem',
-            borderRadius: '8px',
-            border: '1px solid var(--color-border)',
-            transition: 'all 0.2s',
-          }}
-          onMouseOver={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = '#ef4444';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444';
-          }}
-          onMouseOut={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-light)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
-          }}
-        >
-          🔄 Reset Progress
-        </button>
       </main>
 
       <footer className="footer">
-        Made with ♥ for young chess explorers!
+        Made with ♥ for chess explorers of all levels!
       </footer>
     </div>
   );

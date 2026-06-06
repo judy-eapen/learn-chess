@@ -10,12 +10,12 @@
 .header {
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
   color: #fff;
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
   box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
 }
 
@@ -26,52 +26,46 @@
 }
 
 .header-title h1 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 900;
   letter-spacing: -0.5px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .header-title .emoji {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
 }
 
-/* ── Difficulty selector ─────────────────────────────────────────────────── */
-.difficulty-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.difficulty-selector span {
-  font-weight: 700;
-  font-size: 0.95rem;
-  opacity: 0.9;
-}
-
-.diff-btn {
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 0.85rem;
-  border: 2px solid rgba(255,255,255,0.6);
-  background: rgba(255,255,255,0.15);
+.header-map-btn {
+  background: rgba(255,255,255,0.2);
   color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-weight: 700;
+  font-size: 0.85rem;
   transition: all 0.18s ease;
 }
 
-.diff-btn:hover {
-  background: rgba(255,255,255,0.30);
+.header-map-btn:hover {
+  background: rgba(255,255,255,0.35);
   border-color: #fff;
-  transform: translateY(-1px);
 }
 
-.diff-btn.active {
-  background: #fff;
-  color: #ff6b35;
-  border-color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+.header-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-stat {
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
 }
 
 /* ── Main content ────────────────────────────────────────────────────────── */
@@ -82,7 +76,7 @@
   align-items: center;
   padding: 1.5rem 1rem 2rem;
   gap: 1.25rem;
-  max-width: 700px;
+  max-width: 860px;
   margin: 0 auto;
   width: 100%;
 }
@@ -94,4 +88,248 @@
   font-size: 0.8rem;
   color: var(--color-text-light);
   border-top: 1px solid var(--color-border);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Level Map                                                                  */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.level-map-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.level-map-intro {
+  text-align: center;
+}
+
+.level-map-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--color-text);
+  margin-bottom: 0.3rem;
+}
+
+.level-map-subtitle {
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+}
+
+/* Grid: 2 columns on wider screens, 1 on narrow */
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+/* ── Individual level card ──────────────────────────────────────────────── */
+.level-card {
+  position: relative;
+  background: #fff;
+  border-radius: var(--border-radius);
+  border: 2.5px solid var(--color-border);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.25rem 1rem;
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+
+.level-card:not(.locked):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+  border-color: var(--level-color, #ccc);
+}
+
+.level-card.locked {
+  cursor: not-allowed;
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+.level-card.adaptive {
+  background: linear-gradient(135deg, #607d8b11 0%, #607d8b08 100%);
+  border-style: dashed;
+}
+
+/* Lock overlay */
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: calc(var(--border-radius) - 2px);
+  z-index: 2;
+  backdrop-filter: blur(2px);
+}
+
+.lock-icon {
+  font-size: 2rem;
+}
+
+.lock-text {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  font-weight: 600;
+  text-align: center;
+  max-width: 160px;
+}
+
+/* Badge (top-right corner icon) */
+.level-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* Card content */
+.level-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.level-label {
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  padding-right: 2.5rem; /* avoid overlap with badge */
+}
+
+.level-description {
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+  font-weight: 600;
+}
+
+/* Progress row */
+.level-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  margin-top: 0.2rem;
+}
+
+/* Progress bar track */
+.level-progress-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.level-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+/* Unlock threshold marker (small vertical tick on the bar) */
+.unlock-marker {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 16px;
+  background: #ff9800;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.level-complete-badge {
+  font-size: 0.78rem;
+  color: #16a34a;
+  font-weight: 700;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  align-self: flex-start;
+  margin-top: 0.1rem;
+}
+
+/* Adaptive ELO display */
+.adaptive-elo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.3rem;
+}
+
+.elo-label {
+  font-size: 0.78rem;
+  color: var(--color-text-light);
+  font-weight: 600;
+}
+
+.elo-value {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Play button at bottom of card */
+.level-play-btn {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border: 2px solid;
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  transition: all 0.18s ease;
+}
+
+.level-card:not(.locked):hover .level-play-btn {
+  background: var(--level-color, #ccc);
+  color: #fff !important;
+}
+
+/* ── Reset button ──────────────────────────────────────────────────────── */
+.reset-btn {
+  align-self: center;
+  background: transparent;
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  transition: all 0.2s;
+}
+
+/* ── Responsive tweaks ──────────────────────────────────────────────────── */
+@media (max-width: 500px) {
+  .level-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-content {
+    padding: 1rem 0.75rem 1.5rem;
+  }
 }

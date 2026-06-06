@@ -2,11 +2,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import type { Puzzle } from '../puzzles';
+import type { Level } from '../levels';
 
 interface PuzzleBoardProps {
   puzzle: Puzzle;
-  onSolved: (puzzleId: string, difficulty: 1 | 2 | 3) => void;
+  level: Level;
+  playerElo?: number;        // shown only in adaptive mode
+  isAdaptive?: boolean;
+  solvedCount: number;       // puzzles solved so far in this session/level
+  onSolved: (puzzleId: string) => void;
+  onWrong: () => void;
   onNextPuzzle: () => void;
+  onBackToMap: () => void;
 }
 
 type GameStatus = 'playing' | 'wrong' | 'solved';
@@ -20,19 +27,17 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
   };
 }
 
-const DIFF_STARS: Record<1 | 2 | 3, string> = {
-  1: '⭐',
-  2: '⭐⭐',
-  3: '⭐⭐⭐',
-};
-
-const DIFF_COLORS: Record<1 | 2 | 3, string> = {
-  1: '#22c55e',
-  2: '#f59e0b',
-  3: '#a855f7',
-};
-
-export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBoardProps) {
+export default function PuzzleBoard({
+  puzzle,
+  level,
+  playerElo,
+  isAdaptive = false,
+  solvedCount,
+  onSolved,
+  onWrong,
+  onNextPuzzle,
+  onBackToMap,
+}: PuzzleBoardProps) {
   const [chess] = useState(() => new Chess(puzzle.fen));
   const [fen, setFen] = useState(puzzle.fen);
   const [moveIndex, setMoveIndex] = useState(0);
@@ -41,6 +46,7 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
   const [wrongCount, setWrongCount] = useState(0);
   const [celebrationAnim, setCelebrationAnim] = useState(false);
   const computerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrongReported = useRef(false);
 
   // Determine which color the player controls (whoever moves first in the FEN)
   const playerColor = puzzle.fen.includes(' b ') ? 'black' : 'white';
@@ -79,12 +85,15 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
       // Determine promotion piece from the piece string (e.g., "wQ" → "q")
       const promotionPiece = piece[1]?.toLowerCase();
       const playerUci =
-        sourceSquare + targetSquare + (promotionPiece && promotionPiece !== 'p' &&
-          // Only append promotion if the expected move has one, or pawn reaches back rank
-          (expectedUci.length === 5 || (
-            (piece === 'wP' && targetSquare[1] === '8') ||
-            (piece === 'bP' && targetSquare[1] === '1')
-          )) ? promotionPiece : '');
+        sourceSquare +
+        targetSquare +
+        (promotionPiece &&
+        promotionPiece !== 'p' &&
+        (expectedUci.length === 5 ||
+          (piece === 'wP' && targetSquare[1] === '8') ||
+          (piece === 'bP' && targetSquare[1] === '1'))
+          ? promotionPiece
+          : '');
 
       const expectedMove = uciToMove(expectedUci);
 
@@ -97,7 +106,11 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
       if (!isCorrect) {
         setStatus('wrong');
         setWrongCount((c) => c + 1);
-        // Auto-reset "wrong" state after 1 s so they can try again
+        // Report wrong only once per puzzle (for ELO adjustment)
+        if (!wrongReported.current) {
+          wrongReported.current = true;
+          onWrong();
+        }
         setTimeout(() => setStatus('playing'), 1000);
         return false;
       }
@@ -110,7 +123,6 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
           promotion: expectedMove.promotion ?? 'q',
         });
       } catch {
-        // shouldn't happen if puzzle FEN/solution is valid
         return false;
       }
       setFen(chess.fen());
@@ -118,19 +130,15 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
       const nextIndex = moveIndex + 1;
 
       if (nextIndex >= puzzle.solution.length) {
-        // Puzzle complete!
         setStatus('solved');
         setCelebrationAnim(true);
-        onSolved(puzzle.id, puzzle.difficulty);
+        onSolved(puzzle.id);
         return true;
       }
 
       setMoveIndex(nextIndex);
 
-      // If there's still a computer reply, play it after a short delay
-      const isPlayerTurn = (idx: number) => idx % 2 === 0; // player always starts
-      // Alternate: even indices = player moves, odd = computer replies
-      // But multi-move puzzles can vary; we rely on whose turn it is in the resulting position
+      const isPlayerTurn = (idx: number) => idx % 2 === 0;
       const chessRef = chess;
       if (!isPlayerTurn(nextIndex)) {
         computerTimerRef.current = setTimeout(() => {
@@ -139,7 +147,7 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
           if (afterComputerIndex >= puzzle.solution.length) {
             setStatus('solved');
             setCelebrationAnim(true);
-            onSolved(puzzle.id, puzzle.difficulty);
+            onSolved(puzzle.id);
           } else {
             setMoveIndex(afterComputerIndex);
           }
@@ -148,46 +156,36 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
 
       return true;
     },
-    [chess, moveIndex, onSolved, playComputerMove, puzzle, status],
+    [chess, moveIndex, onSolved, onWrong, playComputerMove, puzzle, status],
   );
 
-  const diffColor = DIFF_COLORS[puzzle.difficulty];
+  const levelColor = level.color;
 
   /* ── Styles ─────────────────────────────────────────────────────────────── */
   const cardStyle: React.CSSProperties = {
     width: '100%',
     background: '#fff',
     borderRadius: 'var(--border-radius)',
-    boxShadow: status === 'solved' ? `0 8px 32px ${diffColor}44` : 'var(--shadow)',
-    border: `2px solid ${status === 'solved' ? diffColor : status === 'wrong' ? '#ef4444' : 'var(--color-border)'}`,
+    boxShadow: status === 'solved' ? `0 8px 32px ${levelColor}44` : 'var(--shadow)',
+    border: `2px solid ${
+      status === 'solved' ? levelColor : status === 'wrong' ? '#ef4444' : 'var(--color-border)'
+    }`,
     overflow: 'hidden',
     transition: 'border-color 0.3s, box-shadow 0.3s',
   };
 
   const titleBarStyle: React.CSSProperties = {
     padding: '0.85rem 1.25rem',
-    background: status === 'solved'
-      ? `linear-gradient(135deg, ${diffColor}22 0%, #4ecdc422 100%)`
-      : '#fafafa',
+    background:
+      status === 'solved'
+        ? `linear-gradient(135deg, ${levelColor}22 0%, #4ecdc422 100%)`
+        : '#fafafa',
     borderBottom: '1px solid var(--color-border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '0.5rem',
     flexWrap: 'wrap',
-  };
-
-  const boardWrapStyle: React.CSSProperties = {
-    padding: '1rem',
-    display: 'flex',
-    justifyContent: 'center',
-  };
-
-  const controlsStyle: React.CSSProperties = {
-    padding: '0.75rem 1.25rem 1.25rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
   };
 
   const btnBase: React.CSSProperties = {
@@ -203,30 +201,94 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
     <div style={cardStyle}>
       {/* Title bar */}
       <div style={titleBarStyle}>
-        <div>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
-            {puzzle.title}
-          </h2>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={onBackToMap}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-light)',
+                fontSize: '0.85rem',
+                padding: '0.1rem 0.3rem',
+                cursor: 'pointer',
+                borderRadius: '4px',
+              }}
+              title="Back to level map"
+            >
+              ← Map
+            </button>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
+              {puzzle.title}
+            </h2>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', paddingLeft: '2.5rem' }}>
             {playerColor === 'white' ? '⬜ White to move' : '⬛ Black to move'}
           </div>
         </div>
-        <span
-          style={{
-            fontSize: '1.2rem',
-            background: `${diffColor}22`,
-            padding: '0.2rem 0.6rem',
-            borderRadius: '8px',
-            border: `1px solid ${diffColor}55`,
-          }}
-          title={`Difficulty: ${puzzle.difficulty}`}
-        >
-          {DIFF_STARS[puzzle.difficulty]}
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+          {/* Level badge */}
+          <span
+            style={{
+              fontSize: '0.8rem',
+              background: `${levelColor}22`,
+              color: levelColor,
+              padding: '0.2rem 0.6rem',
+              borderRadius: '8px',
+              border: `1px solid ${levelColor}55`,
+              fontWeight: 700,
+            }}
+          >
+            {level.label}
+          </span>
+          {/* Rating badge */}
+          <span
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--color-text-light)',
+            }}
+          >
+            Rating {puzzle.rating}
+            {isAdaptive && playerElo !== undefined && (
+              <span style={{ color: levelColor, fontWeight: 700 }}>
+                {' '}(You: {playerElo})
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* In-level progress line */}
+      <div
+        style={{
+          padding: '0.4rem 1.25rem',
+          background: '#fafafa',
+          borderBottom: '1px solid var(--color-border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.8rem',
+          color: 'var(--color-text-light)',
+        }}
+      >
+        <span>
+          {solvedCount} solved in{' '}
+          <span style={{ color: levelColor, fontWeight: 700 }}>{level.label}</span>
         </span>
+        {isAdaptive && playerElo !== undefined && (
+          <>
+            <span style={{ margin: '0 0.25rem' }}>·</span>
+            <span>
+              ELO{' '}
+              <span style={{ color: levelColor, fontWeight: 700 }}>{playerElo}</span>
+            </span>
+          </>
+        )}
       </div>
 
       {/* Chessboard */}
-      <div style={boardWrapStyle}>
+      <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: '480px' }}>
           <Chessboard
             position={fen}
@@ -244,8 +306,7 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
       </div>
 
       {/* Controls & feedback */}
-      <div style={controlsStyle}>
-        {/* Status messages */}
+      <div style={{ padding: '0.75rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {status === 'wrong' && (
           <div
             style={{
@@ -259,7 +320,7 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
               animation: 'shake 0.3s ease',
             }}
           >
-            😅 Oops! That's not right. Try again!
+            Oops! That's not right. Try again!
           </div>
         )}
 
@@ -267,14 +328,14 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
           <div
             style={{
               background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
-              border: `1px solid ${diffColor}88`,
+              border: `1px solid ${levelColor}88`,
               borderRadius: '12px',
               padding: '0.85rem 1rem',
               animation: celebrationAnim ? 'bounceIn 0.5s ease' : 'none',
             }}
           >
             <p style={{ fontWeight: 900, fontSize: '1.1rem', color: '#16a34a', marginBottom: '0.4rem' }}>
-              🎉 Excellent! You solved it!
+              Excellent! You solved it!
             </p>
             <p style={{ fontSize: '0.9rem', color: '#166534', lineHeight: 1.4 }}>
               {puzzle.explanation}
@@ -282,7 +343,6 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
           </div>
         )}
 
-        {/* Hint */}
         {status === 'playing' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
@@ -295,7 +355,7 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
               }}
               onClick={() => setShowHint((v) => !v)}
             >
-              💡 {showHint ? 'Hide hint' : 'Show hint'}
+              {showHint ? 'Hide hint' : 'Show hint'}
             </button>
             {wrongCount > 0 && (
               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
@@ -317,29 +377,40 @@ export default function PuzzleBoard({ puzzle, onSolved, onNextPuzzle }: PuzzleBo
               fontWeight: 600,
             }}
           >
-            💡 {puzzle.hint}
+            {puzzle.hint}
           </div>
         )}
 
-        {/* Next puzzle button */}
         {status === 'solved' && (
-          <button
-            style={{
-              ...btnBase,
-              background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
-              color: '#fff',
-              boxShadow: '0 4px 14px rgba(255,107,53,0.4)',
-              fontSize: '1rem',
-              alignSelf: 'flex-start',
-            }}
-            onClick={onNextPuzzle}
-          >
-            Next Puzzle →
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              style={{
+                ...btnBase,
+                background: `linear-gradient(135deg, ${levelColor}, ${levelColor}cc)`,
+                color: '#fff',
+                boxShadow: `0 4px 14px ${levelColor}55`,
+                fontSize: '1rem',
+              }}
+              onClick={onNextPuzzle}
+            >
+              Next Puzzle →
+            </button>
+            <button
+              style={{
+                ...btnBase,
+                background: '#f3f4f6',
+                color: '#4b5563',
+                border: '1px solid #e5e7eb',
+                fontSize: '0.9rem',
+              }}
+              onClick={onBackToMap}
+            >
+              ← Level Map
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Inline keyframe animations via a style tag approach */}
       <style>{`
         @keyframes shake {
           0%   { transform: translateX(0); }
