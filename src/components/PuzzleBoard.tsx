@@ -7,8 +7,6 @@ import type { Level } from '../levels';
 interface PuzzleBoardProps {
   puzzle: Puzzle;
   level: Level;
-  playerElo?: number;        // shown only in adaptive mode
-  isAdaptive?: boolean;
   solvedCount: number;       // puzzles solved so far in this session/level
   onSolved: (puzzleId: string) => void;
   onWrong: () => void;
@@ -30,8 +28,6 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
 export default function PuzzleBoard({
   puzzle,
   level,
-  playerElo,
-  isAdaptive = false,
   solvedCount,
   onSolved,
   onWrong,
@@ -250,11 +246,6 @@ export default function PuzzleBoard({
             }}
           >
             Rating {puzzle.rating}
-            {isAdaptive && playerElo !== undefined && (
-              <span style={{ color: levelColor, fontWeight: 700 }}>
-                {' '}(You: {playerElo})
-              </span>
-            )}
           </span>
         </div>
       </div>
@@ -276,15 +267,6 @@ export default function PuzzleBoard({
           {solvedCount} solved in{' '}
           <span style={{ color: levelColor, fontWeight: 700 }}>{level.label}</span>
         </span>
-        {isAdaptive && playerElo !== undefined && (
-          <>
-            <span style={{ margin: '0 0.25rem' }}>·</span>
-            <span>
-              ELO{' '}
-              <span style={{ color: levelColor, fontWeight: 700 }}>{playerElo}</span>
-            </span>
-          </>
-        )}
       </div>
 
       {/* Chessboard */}

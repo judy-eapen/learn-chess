@@ -6,6 +6,7 @@ export interface Level {
   puzzleCount: number;
   color: string;
   description: string;
+  emoji: string;
 }
 
 export const LEVELS: Level[] = [
@@ -17,6 +18,7 @@ export const LEVELS: Level[] = [
     puzzleCount: 100,
     color: '#4caf50',
     description: 'Mate in 1, basic captures',
+    emoji: '🌱',
   },
   {
     id: 'intermediate',
@@ -26,6 +28,7 @@ export const LEVELS: Level[] = [
     puzzleCount: 100,
     color: '#2196f3',
     description: 'Mate in 2, simple forks',
+    emoji: '🌿',
   },
   {
     id: 'intermediate2',
@@ -34,7 +37,8 @@ export const LEVELS: Level[] = [
     maxRating: 1200,
     puzzleCount: 100,
     color: '#9c27b0',
-    description: 'Mate in 2-3, pins, skewers',
+    description: 'Mate in 2–3, pins & skewers',
+    emoji: '🌳',
   },
   {
     id: 'advanced',
@@ -44,38 +48,37 @@ export const LEVELS: Level[] = [
     puzzleCount: 100,
     color: '#ff9800',
     description: 'Combinations, discovered attacks',
+    emoji: '🔥',
   },
   {
     id: 'master',
     label: 'Master',
     minRating: 1600,
-    maxRating: 9999,
+    maxRating: 2000,
     puzzleCount: 100,
     color: '#f44336',
     description: 'Complex multi-move combinations',
+    emoji: '👑',
   },
   {
     id: 'adaptive',
     label: 'Adaptive',
-    minRating: 0,
+    minRating: 2000,
     maxRating: 9999,
-    puzzleCount: Infinity,
+    puzzleCount: 100,
     color: '#607d8b',
-    description: 'Puzzles matched to your rating',
+    description: 'Grandmaster-level — the ultimate challenge',
+    emoji: '⚡',
   },
 ];
 
-export const ADAPTIVE_LEVEL = LEVELS[LEVELS.length - 1];
-export const STANDARD_LEVELS = LEVELS.slice(0, -1);
-
-/** Index of a level by id */
-export function getLevelIndex(levelId: string): number {
-  return LEVELS.findIndex((l) => l.id === levelId);
-}
+/** 80% completion required to unlock the next level */
+export const UNLOCK_THRESHOLD = 0.8;
 
 export function getLevelById(levelId: string): Level | undefined {
   return LEVELS.find((l) => l.id === levelId);
 }
 
-/** 80% completion required to unlock the next level */
-export const UNLOCK_THRESHOLD = 0.8;
+export function getLevelIndex(levelId: string): number {
+  return LEVELS.findIndex((l) => l.id === levelId);
+}
